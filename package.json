@@ -1,0 +1,42 @@
+{
+  "name": "umpay",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/flyingfisher/umpay.git"
+  },
+  "keywords": [
+    "umpay"
+  ],
+  "author": "flyingfish",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/flyingfisher/umpay/issues"
+  },
+  "homepage": "https://github.com/flyingfisher/umpay",
+  "dependencies": {
+    "bluebird": "^2.9.14",
+    "iconv-lite": "^0.4.7",
+    "java": "^0.4.6",
+    "lodash": "^3.5.0",
+    "moment": "^2.9.0",
+    "node-java-maven": "0.0.5",
+    "node-rsa": "^0.2.23",
+    "underscore.string": "^3.0.3",
+    "xml2js": "^0.4.6"
+  },
+  "java": {
+    "dependencies": [
+      {
+        "groupId": "com.yuhong",
+        "artifactId": "umpay.crypt",
+        "version": "1.0.0"
+      }
+    ]
+  }
+}
