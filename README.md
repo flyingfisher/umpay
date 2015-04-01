@@ -7,6 +7,10 @@ This project is write in Typescript 1.4.
 
 File sample.ts is example code. File index.js is the entry.
 
+Dependence:
+
+This project is dependent on [java](https://github.com/joeferner/node-java). You should prepare you environment according to this project.
+
 Api:
 ```
    Available options:
