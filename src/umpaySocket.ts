@@ -12,7 +12,7 @@ import events = require("events");
 
 import xml2js = require("xml2js");
 
-var _parser = new xml2js.Parser({normalizeTags:true,explicitArray:false});
+var _parser = new xml2js.Parser({normalizeTags:true,explicitArray:false,parseNumbers:false});
 var _builder = new xml2js.Builder({
     rootName:"UMPAY",
     xmldec:{version :"1.0",encoding:"GBK"}
