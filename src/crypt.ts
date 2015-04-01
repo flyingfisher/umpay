@@ -71,6 +71,8 @@ function padding(data){
     return newbt;
 }
 
+import path = require("path");
+
 var javaPromise = new Promise((resolve,reject)=>{
     mvn({
         repositories:[
@@ -78,10 +80,12 @@ var javaPromise = new Promise((resolve,reject)=>{
                 id: 'maven-yuhong',
                 url: 'http://dev2.yuhongtech.net:8081/nexus/content/groups/public/'
             }
-        ]
-    },function(err, mvnResults) {
+        ],
+        packageJsonPath:path.resolve(__dirname, "../package.json")
+    },(err, mvnResults) => {
         if (err) {
             reject(new Error('could not resolve maven dependencies:'+ err.message));
+            return;
         }
         mvnResults.classpath.forEach(function(c) {
             java.classpath.push(c);
