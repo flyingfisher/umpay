@@ -18,7 +18,7 @@ var options = {
     }
 };
 
-var Client = require("./index");
+var Client = require("umpay");
 
 var client = new Client("port","host",options);
 
