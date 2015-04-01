@@ -32,6 +32,10 @@ client.on("error",function(err){
     console.log(err);
 });
 
+client.on("disconnect",function(){
+    console.log("disconnected");
+});
+
 client.pay("136xxxxxxxx",200).then((rst)=>{
     console.log(rst);
 }).catch((err)=>{

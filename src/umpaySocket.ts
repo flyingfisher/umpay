@@ -53,6 +53,11 @@ class UmpaySocket extends events.EventEmitter {
         this.socket.on("error",(err)=>{
             this.emit("error",err);
         });
+        this.socket.on("close",()=>{
+            this.emit("disconnect");
+            this.socket.destroy();
+            this.socket = undefined;
+        });
         this.socket.connect(this.port,this.host);
         return deferred.promise;
     }

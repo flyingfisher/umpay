@@ -88,6 +88,10 @@ class UmpayClient extends events.EventEmitter{
         this.socket.on("error",(err)=>{
             this.emit("error", err);
         });
+
+        this.socket.on("disconnect",()=>{
+            this.emit("disconnect");
+        });
     }
 
     initOrderMap(){
