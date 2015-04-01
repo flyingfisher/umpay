@@ -48,9 +48,9 @@ client.refund("136xxxxxxxx",{AMOUNT:200,ORDERID:"XXXX"}).then((rst)=>{
     console.log(err);
 });
 
-// JUST do like this
+// Or do like this
 
-client.pay("136xxxxxxxx").then((rst)=>{
+client.pay("136xxxxxxxx", 200).then((rst)=>{
     console.log("pay success");
     //do job
     if("not success") {

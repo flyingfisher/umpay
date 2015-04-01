@@ -74,6 +74,7 @@ function padding(data){
 import path = require("path");
 
 var javaPromise = new Promise((resolve,reject)=>{
+    console.log("Fetching java library");
     mvn({
         repositories:[
             {

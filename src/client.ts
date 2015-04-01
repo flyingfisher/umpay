@@ -28,10 +28,6 @@ class UmpayClient extends events.EventEmitter{
         _.defaults(options,{
             spId:"",
             merId:"",
-            latestOrderIdHolder:{
-                file:"./orderfile",
-                limit:100
-            },
             goodsId:{}
         });
 
@@ -114,8 +110,8 @@ class UmpayClient extends events.EventEmitter{
     }
 
     writeOrderMap(pay){
-        this.mobileOrderMap[pay.MOBILENO] = pay;
         if(this.options.latestOrderIdHolder) {
+            this.mobileOrderMap[pay.MOBILENO] = pay;
             fs.appendFile(this.options.latestOrderIdHolder.file, JSON.stringify(pay)+"\n");
             this.mobileCount ++;
             if(this.mobileCount > this.options.latestOrderIdHolder.limit){
@@ -145,7 +141,7 @@ class UmpayClient extends events.EventEmitter{
         });
     }
 
-    pay(mobile,amount=200){
+    pay(mobile,amount){
         if(!this.loginResolve) return Promise.reject(new Error("not logged in"));
 
         return this.loginResolve.promise.then(()=>{
@@ -159,7 +155,7 @@ class UmpayClient extends events.EventEmitter{
         });
     }
 
-    refund(mobile:string, payBody?:{AMOUNT:any; ORDERID:string}){
+    refund(mobile:string, payBody:{AMOUNT:any; ORDERID:string}){
         if(!this.loginResolve) return Promise.reject(new Error("not logged in"));
 
         if (!payBody) payBody = this.mobileOrderMap[mobile];
