@@ -17,10 +17,10 @@ var random = require("./random");
 
 class UmpayClient extends events.EventEmitter{
     private socket:UmpaySocket;
-    private isLogin = false;
     private promiseMap = {};
     private mobileOrderMap = {};
     private mobileCount = 0;
+    private loginResolve;
 
     constructor(port, host, private options){
         super();
@@ -41,17 +41,13 @@ class UmpayClient extends events.EventEmitter{
 
         this.socket.on("received",(msg)=>{
             if(msg.msgProperty === 50){
-                if(msg.isLogin) return;
-
-                if(msg.body.retcode === "0000") {
-                    this.isLogin = true;
+                if(msg.body.retcode === "0000" || msg.body.retcode === "9976") {
+                    this.loginResolve.resolve();
                     this.emit("logged-in");
-                }else if (msg.body.retcode === "9976") {
-                    this.isLogin = true;
-                    this.emit("logged-in");
-                }
-                else{
-                    this.emit("error",new Error("login failed:" + msg.body.memo));
+                }else{
+                    var err = new Error("login failed:" + msg.body.memo);
+                    this.loginResolve.reject(err);
+                    this.emit("error",err);
                 }
 
                 return;
@@ -70,12 +66,17 @@ class UmpayClient extends events.EventEmitter{
                 }
 
                 if(msg.body.retcode === "0000"){
-                    if (promise["_payBody"])
+                    if (promise["_payBody"]) {
                         this.writeOrderMap(promise["_payBody"]);
-                    promise.resolve(promise["_payBody"] || msg.body);
+                        promise.resolve(_.extend(promise["_payBody"], msg.body));
+                    }
+                    else
+                        promise.resolve(msg.body);
                 }
                 else{
-                    promise.reject(new Error(msg.body.memo));
+                    var err = new Error(msg.body.memo);
+                    err["detail"] = msg.body;
+                    promise.reject(err);
                 }
 
                 return;
@@ -125,45 +126,51 @@ class UmpayClient extends events.EventEmitter{
         fs.rename(this.options.latestOrderIdHolder.file,this.options.latestOrderIdHolder.file+".bak");
         fs.truncate(this.options.latestOrderIdHolder.file);
         this.mobileCount = 0;
+        this.mobileOrderMap = {};
+        this.initOrderMap();
     }
 
     login(password){
-        if(this.isLogin) return;
+        if(this.loginResolve) return;
 
+        this.loginResolve = Promise.defer();
         this.socket.connect().then(()=>{
             var rpId = this.generateRpid();
             var sign = crypt.createSign(rpId, password);
-
             this.socket.send(1000, 48, 1, {RPID:rpId, SIGN:sign});
         });
     }
 
     pay(mobile,amount=200){
-        if(!this.isLogin) return Promise.reject(new Error("not logged in"));
+        if(!this.loginResolve) return Promise.reject(new Error("not logged in"));
 
-        var obj = this.createMessageBody(mobile,amount,"1000");
-        this.socket.send(1000, 0, 1, obj);
+        return this.loginResolve.promise.then(()=>{
+            var obj = this.createMessageBody(mobile,amount,"1000");
+            this.socket.send(1000, 0, 1, obj);
 
-        var deferred = Promise.defer();
-        deferred["_payBody"] = obj;
-        this.promiseMap[obj.RPID] = deferred;
-        return deferred.promise;
+            var deferred = Promise.defer();
+            deferred["_payBody"] = obj;
+            this.promiseMap[obj.RPID] = deferred;
+            return deferred.promise;
+        });
     }
 
     refund(mobile:string, payBody?:{AMOUNT:any; ORDERID:string}){
-        if(!this.isLogin) return Promise.reject(new Error("not logged in"));
+        if(!this.loginResolve) return Promise.reject(new Error("not logged in"));
 
-        if(!payBody) payBody = this.mobileOrderMap[mobile];
-        if(!payBody) return Promise.reject(new Error("not pay body found"));
+        if (!payBody) payBody = this.mobileOrderMap[mobile];
+        if (!payBody) return Promise.reject(new Error("not pay body found"));
 
-        var obj = this.createMessageBody(mobile, payBody.AMOUNT, "1001");
-        delete obj["PAYTYPE"];
-        obj.ORDERID = payBody.ORDERID;
-        this.socket.send(1000, 0, 1, obj);
+        return this.loginResolve.promise.then(()=> {
+            var obj = this.createMessageBody(mobile, payBody.AMOUNT, "1001");
+            delete obj["PAYTYPE"];
+            obj.ORDERID = payBody.ORDERID;
+            this.socket.send(1000, 0, 1, obj);
 
-        var deferred = Promise.defer();
-        this.promiseMap[obj.RPID] = deferred;
-        return deferred.promise;
+            var deferred = Promise.defer();
+            this.promiseMap[obj.RPID] = deferred;
+            return deferred.promise;
+        });
     }
 
     createMessageBody(mobile,amount,funCode){

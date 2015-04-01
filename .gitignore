@@ -1,4 +1,8 @@
 /.idea
 /node_modules
 orderHolder
-test.js
+/src/*.js
+/src/*.map
+!/src/random.js
+*.js
+*.map

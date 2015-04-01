@@ -56,7 +56,7 @@ function callCrypt(alg,key,data,isDecrypt,customPadding = false){
 function padding(data){
     var bt = data;
     if(_.isString(data)) {
-        bt = new Buffer(data,"gbk");
+        bt = new Buffer(data);
     }
 
     var len = bt.length;
