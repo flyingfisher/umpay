@@ -89,6 +89,7 @@ var javaPromise = new Promise((resolve,reject)=>{
             return;
         }
         mvnResults.classpath.forEach(function(c) {
+            console.log("loading jar", c);
             java.classpath.push(c);
         });
         resolve();
