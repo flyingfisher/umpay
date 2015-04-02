@@ -111,7 +111,7 @@ export function processKey(loginResp, priKeyPath){
     if(!loginResp.key) return Promise.reject(new Error("no key found in login resp"));
 
     var NodeRSA = require('node-rsa');
-    var key = new NodeRSA(fs.readFileSync(priKeyPath),"pkcs8-private-der",{encryptionScheme:"pkcs1"});
+    var key = new NodeRSA(fs.readFileSync(priKeyPath),"pkcs8-private-der",{encryptionScheme:"pkcs1",environment:'browser'});
 
     var keyBuf = key.decrypt(new Buffer(loginResp.key,"base64"));
     processKeyBuffer(keyBuf.slice(100));
