@@ -136,7 +136,7 @@ class UmpayClient extends events.EventEmitter{
         this.loginResolve = Promise.defer();
         this.socket.connect().then(()=>{
             var rpId = this.generateRpid();
-            var sign = crypt.createSign(rpId, password);
+            var sign = crypt.createSign(rpId, password, this.options.priKeyPath);
             this.socket.send(1000, 48, 1, {RPID:rpId, SIGN:sign});
         });
     }

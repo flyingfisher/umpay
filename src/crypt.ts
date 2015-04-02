@@ -11,17 +11,8 @@
 import fs = require("fs");
 import crypto = require("crypto");
 
-var java = require("java");
-var mvn = require('node-java-maven');
-
-var rsaKey:any;
 var pinKey:Buffer;
 var macKey:Buffer;
-
-export function loadPriKey(path){
-    var NodeRSA = require('node-rsa');
-    rsaKey = new NodeRSA(fs.readFileSync(path),"pkcs8-private-der");
-}
 
 export function crypt3Des(buf, isDecrypt=false){
     if(!pinKey) return;
@@ -73,49 +64,19 @@ function padding(data){
 
 import path = require("path");
 
-var javaPromise = new Promise((resolve,reject)=>{
-    console.log("Fetching java library");
-    mvn({
-        repositories:[
-            {
-                id: 'maven-yuhong',
-                url: 'http://dev2.yuhongtech.net:8081/nexus/content/groups/public/'
-            }
-        ],
-        packageJsonPath:path.resolve(__dirname, "../package.json")
-    },(err, mvnResults) => {
-        if (err) {
-            reject(new Error('could not resolve maven dependencies:'+ err.message));
-            return;
-        }
-        mvnResults.classpath.forEach(function(c) {
-            console.log("loading jar", c);
-            java.classpath.push(c);
-        });
-        resolve();
-    });
-});
-
-function getPikAndMak(priFilePath, key){
-    return javaPromise.then(()=>{
-        var values = java.callStaticMethodSync("PIKMACTool", "getPikAndMak", priFilePath,key);
-        var buf = new Buffer(values.length);
-        values.forEach((it,idx)=>{
-            buf.writeInt8(it,idx);
-        });
-        return buf;
-    });
-}
-
-export function createSign(rpid:string, password:string):string {
+export function createSign(rpid:string, password:string, priKeyPath:string):string {
     var sum = rpid + password;
     var alga = crypto.createHash("sha1");
     alga.update(sum);
     var digestLocal = alga.digest();
 
-    if(!rsaKey) return digestLocal.toString("base64");
+    if(priKeyPath) {
+        var NodeRSA = require('node-rsa');
+        var rsaKey = new NodeRSA(fs.readFileSync(priKeyPath), "pkcs8-private-der");
+        return rsaKey.encryptPrivate(digestLocal, 'base64');
+    }
 
-    return rsaKey.encryptPrivate(digestLocal, 'base64');
+    return digestLocal.toString("base64");
 }
 
 export function createMAC(bodyStr:string) {
@@ -149,9 +110,11 @@ function makeXOR(b1:Buffer, b2:Buffer, start:number, n:number) {
 export function processKey(loginResp, priKeyPath){
     if(!loginResp.key) return Promise.reject(new Error("no key found in login resp"));
 
-    return getPikAndMak(priKeyPath, loginResp.key).then((keyBuf)=>{
-        processKeyBuffer(keyBuf);
-    });
+    var NodeRSA = require('node-rsa');
+    var key = new NodeRSA(fs.readFileSync(priKeyPath),"pkcs8-private-der",{encryptionScheme:"pkcs1"});
+
+    var keyBuf = key.decrypt(new Buffer(loginResp.key,"base64"));
+    processKeyBuffer(keyBuf.slice(100));
 }
 
 export function processKeyBuffer(keyBuf){

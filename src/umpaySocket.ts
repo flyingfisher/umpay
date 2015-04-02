@@ -36,8 +36,6 @@ class UmpaySocket extends events.EventEmitter {
             heartbeatTimeout: 180 * 1000,
             priKeyPath:""
         });
-        if(options.priKeyPath)
-            crypt.loadPriKey(options.priKeyPath);
     }
 
     connect() {
@@ -78,12 +76,11 @@ class UmpaySocket extends events.EventEmitter {
             parse(messageBody).then((rst)=>{
                 if (rst && rst.umpay) {
                     if (rst.umpay.retcode === "0000") {
-                        crypt.processKey(rst.umpay,this.options.priKeyPath).then(()=>{
-                            this.emit("received", _.extend(msg, {body: rst.umpay}));
-                        });
+                        crypt.processKey(rst.umpay,this.options.priKeyPath);
                         this.handleHeartbeat();
-                    }else
-                        this.emit("received", _.extend(msg, {body: rst.umpay}));
+                    }
+
+                    this.emit("received", _.extend(msg, {body: rst.umpay}));
                 }
                 else
                     this.emit("error", new Error("unknown rst:"+JSON.stringify(rst)));
