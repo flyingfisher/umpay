@@ -61,6 +61,14 @@ class UmpaySocket extends events.EventEmitter {
     }
 
     send(seqNo, msgProperty, msgSafeMark, message){
+        if(!message) return;
+        // remove undefined or null key
+        for(var key in message){
+            if(!message.hasOwnProperty(key)) continue;
+            if(_.isNull(message[key]) || _.isUndefined(message[key]))
+                delete message[key];
+        }
+
         var messageStr = build(message);
         var buf = this.createBuffer(seqNo, msgProperty, msgSafeMark, messageStr);
         this.socket.write(buf);
