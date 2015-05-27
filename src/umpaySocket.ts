@@ -26,6 +26,8 @@ import crypt = require("./crypt");
 class UmpaySocket extends events.EventEmitter {
     private socket:net.Socket;
     private spId:number;
+    private bufferCache;
+    private _heartBeatHandle;    
 
     constructor(private port,
                 private host="localhost",
@@ -46,7 +48,7 @@ class UmpaySocket extends events.EventEmitter {
             deferred.resolve();
         });
         this.socket.on("data",(buffer)=>{
-            this.handleBuffer(buffer);
+            this.handleData(buffer);
         });
         this.socket.on("error",(err)=>{
             this.emit("error",err);
@@ -74,8 +76,34 @@ class UmpaySocket extends events.EventEmitter {
         this.socket.write(buf);
     }
 
-    handleBuffer(buffer){
-        var msg = this.readBuf(buffer);
+    handleData(buffer){
+        if(!this.bufferCache) {
+            this.bufferCache = buffer;
+        }else{
+            this.bufferCache = Buffer.concat([this.bufferCache,buffer]);
+        }
+        
+        var obj={msg:undefined};
+        while(this.fetchData(obj)){
+            this.handleBuffer(obj.msg);
+        }
+    }
+
+    fetchData(obj){
+        if(!obj) return false;
+        if(this.bufferCache.length<32) return false;
+        
+        obj.msg = this.readBuf(this.bufferCache);
+        if(!obj.msg) return false;
+        
+        if(obj.msg.length > this.bufferCache.length ) return false;
+        
+        this.bufferCache = this.bufferCache.slice(obj.msg.length);
+        return true;
+    }
+    
+
+    handleBuffer(msg){        
         if(msg.msgProperty === 82) return; // heart beat
 
         var messageBody;
@@ -85,7 +113,8 @@ class UmpaySocket extends events.EventEmitter {
                 if (rst && rst.umpay) {
                     if (rst.umpay.retcode === "0000") {
                         crypt.processKey(rst.umpay,this.options.priKeyPath);
-                        this.handleHeartbeat();
+                        if(!this._heartBeatHandle)
+                            this.handleHeartbeat();
                     }
 
                     this.emit("received", _.extend(msg, {body: rst.umpay}));
@@ -115,9 +144,9 @@ class UmpaySocket extends events.EventEmitter {
         var msgSafeMark = 0;
         var buf = this.createBuffer(seqNo,msgProperty,msgSafeMark,null);
         this.socket.write(buf);
-        setTimeout(()=>{
+        this._heartBeatHandle = setTimeout(()=>{
             this.handleHeartbeat();
-        },this.options.heartbeatTimeout);
+        }, this.options.heartbeatTimeout);
     }
 
     createBuffer(seqNo, msgProperty, msgSafeMark, messageBodyStr?) {
@@ -168,10 +197,13 @@ class UmpaySocket extends events.EventEmitter {
     }
 
     readBuf(buffer){
+        var length = buffer.readUInt32BE(4);
+        if(length < 32) return;
+        
         var msgProperty = buffer.readInt8(12);
         var msgSafeMark = buffer.readInt8(13);
-        var bodyBuf = buffer.slice(32);
-        return {msgProperty:msgProperty, msgSafeMark:msgSafeMark, bodyBuf:bodyBuf};
+        var bodyBuf = buffer.slice(32, length);
+        return {msgProperty:msgProperty, msgSafeMark:msgSafeMark, bodyBuf:bodyBuf, length:length};
     }
 
     disconnect(){
@@ -179,6 +211,8 @@ class UmpaySocket extends events.EventEmitter {
             this.socket.end();
             this.socket.destroy();
             this.socket = undefined;
+            clearTimeout(this._heartBeatHandle);
+            this._heartBeatHandle = undefined;
         }
     }
 }

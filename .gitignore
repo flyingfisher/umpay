@@ -6,3 +6,4 @@ orderHolder
 !/src/random.js
 *.js
 *.map
+/_tsfile
