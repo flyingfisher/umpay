@@ -4,6 +4,7 @@ orderHolder
 /src/*.js
 /src/*.map
 !/src/random.js
-*.js
-*.map
+!/src/errorCodeMap.js
+/*.js
+/*.map
 /_tsfile
