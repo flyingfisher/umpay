@@ -70,7 +70,14 @@ class UmpayClient extends events.EventEmitter{
                         promise.resolve(msg.body);
                 }
                 else{
-                    var err = new Error(msg.body.memo);
+                    var errMap = require("./errorCodeMap");
+                    var errMsg = errMap[msg.body.retcode];
+                    var err:Error;
+                    if(errMsg){
+                        err = new Error(msg.body.retcode + "|" + errMsg);
+                    }else{
+                        err = new Error(msg.body.memo);
+                    }
                     err["detail"] = msg.body;
                     promise.reject(err);
                 }
