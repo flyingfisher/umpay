@@ -71,10 +71,11 @@ class UmpayClient extends events.EventEmitter{
                 }
                 else{
                     var errMap = require("./errorCodeMap");
-                    var errMsg = errMap[msg.body.retcode];
+                    var errCode = msg.body.memo.split("|")[0];
+                    var errMsg = errMap[errCode];
                     var err:Error;
                     if(errMsg){
-                        err = new Error(msg.body.retcode + "|" + errMsg);
+                        err = new Error(errCode + "|" + errMsg);
                     }else{
                         err = new Error(msg.body.memo);
                     }
