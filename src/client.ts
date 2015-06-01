@@ -182,6 +182,9 @@ class UmpayClient extends events.EventEmitter{
 
     createMessageBody(mobile,amount,funCode){
         var rpId = this.generateRpid();
+        var goodsId = this.options.goodsId[amount];
+        if (!goodsId)
+            goodsId = this.options.defaultGoodsId || "076";
         return {
             FUNCODE:funCode,
             RPID: rpId,
@@ -193,7 +196,7 @@ class UmpayClient extends events.EventEmitter{
             PAYTYPE:"2",
             MERID:this.options.merId,
             ORDERID:random.id(),
-            GOODSID:this.options.goodsId[amount]||"001",
+            GOODSID:goodsId,
             GOODSNUM:"1"
         };
     }
