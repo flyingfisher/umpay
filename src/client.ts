@@ -70,15 +70,8 @@ class UmpayClient extends events.EventEmitter{
                         promise.resolve(msg.body);
                 }
                 else{
-                    var errMap = require("./errorCodeMap");
-                    var errCode = msg.body.memo.split("|")[0];
-                    var errMsg = errMap[errCode];
-                    var err:Error;
-                    if(errMsg){
-                        err = new Error(errCode + "|" + errMsg);
-                    }else{
-                        err = new Error(msg.body.memo);
-                    }
+                    var errMsg = this.getErrMsg(msg.body.memo);
+                    var err = new Error(errMsg);                    
                     err["detail"] = msg.body;
                     promise.reject(err);
                 }
@@ -96,6 +89,19 @@ class UmpayClient extends events.EventEmitter{
         this.socket.on("disconnect",()=>{
             this.emit("disconnect");
         });
+    }
+
+    getErrMsg(memo){
+        if (memo.indexOf("错误不详")>-1){
+            var errMap = require("./errorCodeMap");
+            var errCode = memo.split("|")[0];
+            var errMsg = errMap[errCode];
+            if(errMsg){
+                return errCode + "|" + errMsg;
+            }
+        }
+        
+        return memo;        
     }
 
     initOrderMap(){
